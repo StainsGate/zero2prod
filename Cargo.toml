@@ -1,8 +1,20 @@
 [package]
 name = "zero2prod"
+license = "MIT"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+axum = "0.6.11"
+serde = { version = "1.0.157", features = ["derive"] }
+serde_json = "1.0.94"
+tokio = { version = "1.26.0", features = ["full"] }
+tower = "0.4.13"
+tracing = { version = "0.1.37", features = ["log"] }
+tracing-subscriber = "0.3.16"
+hyper = { version = "0.14.23", features = ["server", "client"] }
+hyper-rustls = { version = "0.23.2", default-features = false, features = ["http1", "tokio-runtime", "webpki-roots"] }
+futures = { version = "0.3.25", default-features = false, features = ["std"] }
+axum-macros = "0.3.6"
