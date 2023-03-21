@@ -1,0 +1,7 @@
+port = 8000
+
+[database]
+host = "localhost"
+username = "postgres"
+password = "4822914"
+db_name = "midsiberia1908"

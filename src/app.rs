@@ -1,33 +1,18 @@
-use axum_macros::FromRef;
+use axum::{routing, Router};
+use std::net::TcpListener;
+
+use crate::routes::{health_check, subscribe};
+
 use futures::future::BoxFuture;
-use std::{
-    fmt::{self, Display},
-    future::Future,
-    net::{SocketAddr, TcpListener},
-    pin::Pin,
-    task::{Context, Poll},
-    time::Duration,
-};
 
 pub type Server = BoxFuture<'static, hyper::Result<()>>;
 
-pub struct Application {
-    port: u16,
-    server: Server,
-}
-
-#[derive(Clone, Debug)]
-pub struct BaseUrl(String);
-
-impl Display for BaseUrl {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Display::fmt(&self.0, f)
-    }
-}
-
-#[derive(Clone, FromRef)]
-struct AppState {
-    // db_pool: PgPool,
-    // email_client: EmailClient,
-    base_url: BaseUrl,
+pub fn run(listener: TcpListener) -> hyper::Result<Server> {
+    let server = hyper::Server::from_tcp(listener)?.serve(
+        Router::new()
+            .route("/health_check", routing::get(health_check))
+            .route("/subscriptions", routing::post(subscribe))
+            .into_make_service(),
+    );
+    Ok(Box::pin(server))
 }

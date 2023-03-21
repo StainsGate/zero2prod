@@ -1,6 +1,8 @@
 use std::net::TcpListener;
 
 use hyper::{header, Request};
+use sqlx::{Connection, PgConnection};
+use zero2prod::settings::Settings;
 
 #[tokio::test]
 async fn health_check_works() {
@@ -19,6 +21,10 @@ async fn health_check_works() {
 #[tokio::test]
 async fn subscribe_returns_a_200_for_valid_form_data() {
     let address = spawn_app();
+    let settings = Settings::load().expect("failed to load configuration file");
+    let mut connection = PgConnection::connect_with(&settings.database.connect_options())
+        .await
+        .expect("failed to connect to database");
     let client = hyper::Client::new();
 
     let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
@@ -32,10 +38,18 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
         .expect("failed to execute request");
 
     assert_eq!(200, response.status());
+
+    let saved = sqlx::query!("SELECT email,name FROM subscriptions")
+        .fetch_one(&mut connection)
+        .await
+        .expect("failed to fetch saved subscription");
+
+    assert_eq!("osamu", saved.name);
+    assert_eq!("osamu1908@gmail.com", saved.email)
 }
 
 #[tokio::test]
-async fn subscribe_return_a_400_when_data_is_missing() {
+async fn subscribe_return_a_422_when_data_is_missing() {
     let address = spawn_app();
     let client = hyper::Client::new();
 
@@ -56,7 +70,7 @@ async fn subscribe_return_a_400_when_data_is_missing() {
             .expect("failed to execute request");
 
         assert_eq!(
-            400,
+            422,
             response.status(),
             "the api did not fail with 400 bad request when the payload was {}",
             error_message
@@ -67,7 +81,7 @@ async fn subscribe_return_a_400_when_data_is_missing() {
 fn spawn_app() -> String {
     let listener = TcpListener::bind("127.0.0.1:0").expect("failed tp bind random port");
     let port = listener.local_addr().unwrap().port();
-    let server = zero2prod::run(listener).expect("failed to bind address");
+    let server = zero2prod::app::run(listener).expect("failed to bind address");
     let _ = tokio::spawn(server);
     format!("http://127.0.0.1:{}", port)
 }

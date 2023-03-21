@@ -18,7 +18,8 @@ hyper = { version = "0.14.23", features = ["server", "client"] }
 hyper-rustls = { version = "0.23.2", default-features = false, features = ["http1", "tokio-runtime", "webpki-roots"] }
 futures = { version = "0.3.25", default-features = false, features = ["std"] }
 axum-macros = "0.3.6"
-
+sqlx = { version = "0.6.2", features = ["postgres", "uuid", "chrono", "runtime-tokio-rustls"] }
+config = { version = "0.13.3", default-features = false, features = ["toml"] }
 
 
 [dev-dependencies]
