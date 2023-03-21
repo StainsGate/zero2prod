@@ -1,13 +1,8 @@
-use axum::{routing, Router};
-use zero2prod::routes::health_check;
+use std::net::TcpListener;
+use zero2prod::run;
 
 #[tokio::main]
 async fn main() -> hyper::Result<()> {
-    hyper::Server::bind(&"127.0.0.1:8000".parse().expect("invalid bind adress"))
-        .serve(
-            Router::new()
-                .route("/health_check", routing::get(health_check))
-                .into_make_service(),
-        )
-        .await
+    let listener = TcpListener::bind("127.0.0.1:8000").expect("failed to bind address");
+    run(listener)?.await
 }
