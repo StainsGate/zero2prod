@@ -1,8 +1,13 @@
 # Email subscribe API from zero to prod using axum and sqlx
 
-## docker command:
+## how to setup:
 
 ```bash
-   $ docker compose -f docker-compose.test.yml -p zero2prod up -d
-   $ sqlx database reset -y
+   # run docker images
+   $  bash ./env/test/setup start
+
+   #run sqlx migrate
+   $ sqlx migrate run
 ```
+
+- **add tracing and prometheus**: traces are collected using [Grafana Tempo](https://grafana.com/oss/tempo/) and they can be inspected using [Grafana](https://grafana.com/) at the address `http://localhost:3000`. send request and then can find service in grafana-tempo.
