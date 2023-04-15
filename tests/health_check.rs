@@ -3,7 +3,7 @@ use std::net::TcpListener;
 use hyper::{header, Request};
 use once_cell::sync::Lazy;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
-use tracing::{subscriber, Level};
+use tracing::Level;
 use uuid::Uuid;
 use zero2prod::settings::DatabaseSettings;
 
@@ -85,7 +85,8 @@ async fn spawn_app() -> TestApp {
 
     let address = format!("http://127.0.0.1:{}", port);
 
-    let mut settings = zero2prod::Settings::load().expect("failed to load config file");
+    let filename = Some("./tests/configuration.toml");
+    let mut settings = zero2prod::Settings::load(filename).expect("failed to load config file");
     settings.database.db_name = Uuid::new_v4().to_string();
     let db_pool = configure_database(&settings.database).await;
 

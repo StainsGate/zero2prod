@@ -1,4 +1,3 @@
-use axum::ServiceExt;
 use axum::{routing, Router};
 use axum_macros::FromRef;
 use std::net::{SocketAddr, TcpListener};

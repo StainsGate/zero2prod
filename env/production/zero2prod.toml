@@ -1,0 +1,14 @@
+address = "0.0.0.0"
+port = 8000
+
+[log]
+level = "trace"
+endpoint = "http://grafana-tempo:4317"
+
+[database]
+host = "postgres-db"
+username = "postgres"
+password = "4822914"
+db_name = "midsiberia1908"
+migrate = true
+
