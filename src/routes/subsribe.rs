@@ -4,6 +4,7 @@ use chrono::Utc;
 use hyper::StatusCode;
 use serde::Deserialize;
 use sqlx::PgPool;
+use unicode_segmentation::UnicodeSegmentation;
 use uuid::Uuid;
 
 #[derive(Deserialize)]
@@ -24,6 +25,10 @@ pub async fn subscribe(
     State(db_pool): State<PgPool>,
     Form(form): Form<FormData>,
 ) -> Result<(), StatusCode> {
+    if !is_valid_name(&form.name) {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
     insert_subscriber(&db_pool, &form)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -50,4 +55,14 @@ async fn insert_subscriber(db_pool: &PgPool, form: &FormData) -> sqlx::Result<()
         err
     })?;
     Ok(())
+}
+
+fn is_valid_name(name: &str) -> bool {
+    const FORBIDEN_CHARACTERS: [char; 9] = ['/', '(', ')', '"', '<', '>', '\\', '{', '}'];
+
+    let is_empty_or_whitespace = name.trim().is_empty();
+    let is_too_long = name.graphemes(true).count() > 256;
+    let contains_forbidden_characters = name.chars().any(|c| FORBIDEN_CHARACTERS.contains(&c));
+
+    !(is_empty_or_whitespace || is_too_long || contains_forbidden_characters)
 }

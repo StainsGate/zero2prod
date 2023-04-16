@@ -1,0 +1,13 @@
+port = 8000
+
+[log]
+level = "trace"
+endpoint = "http://localhost:4317"
+
+[database]
+host = "localhost"
+username = "postgres"
+password = "4822914"
+db_name = "midsiberia1908"
+migrate = true
+
