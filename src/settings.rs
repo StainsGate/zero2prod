@@ -3,7 +3,10 @@ use secrecy::{ExposeSecret, Secret};
 use serde::Deserialize;
 use serde_with::{serde_as, DisplayFromStr};
 use sqlx::postgres::PgConnectOptions;
-use std::net::IpAddr;
+use std::{net::IpAddr, time::Duration};
+use tracing::dispatcher::set_default;
+
+use crate::domain::SubscriberEmail;
 
 #[derive(Deserialize)]
 pub struct Settings {
@@ -11,6 +14,7 @@ pub struct Settings {
     pub port: u16,
     pub log: LogSettings,
     pub database: DatabaseSettings,
+    pub email_client: EmailClientSettings,
 }
 
 #[serde_as]
@@ -32,6 +36,15 @@ pub struct DatabaseSettings {
     pub migrate: bool,
 }
 
+#[derive(Deserialize)]
+pub struct EmailClientSettings {
+    pub base_url: String,
+    pub sender_email: String,
+    pub authorization_token: Secret<String>,
+    #[serde(with = "humantime_serde")]
+    pub timeout: Duration,
+}
+
 impl Settings {
     pub fn load(filename: Option<&str>) -> Result<Self, ConfigError> {
         let mut config = Config::builder()
@@ -41,7 +54,8 @@ impl Settings {
             .set_default("database.host", "localhost")?
             .set_default("database.port", "5432")?
             // .add_source(File::new("configuration.toml", FileFormat::Toml))
-            .set_default("database.migrate", "false")?;
+            .set_default("database.migrate", "false")?
+            .set_default("email_client.timeout", "10s")?;
 
         if let Some(filename) = filename {
             config = config.add_source(File::new(filename, FileFormat::Toml).required(true))
@@ -69,5 +83,11 @@ impl DatabaseSettings {
             .port(self.port)
             .username(&self.username)
             .password(self.password.expose_secret())
+    }
+}
+
+impl EmailClientSettings {
+    pub fn sender(&self) -> Result<SubscriberEmail, String> {
+        SubscriberEmail::parse(self.sender_email.clone())
     }
 }

@@ -5,7 +5,10 @@ use once_cell::sync::Lazy;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use tracing::Level;
 use uuid::Uuid;
-use zero2prod::settings::DatabaseSettings;
+use zero2prod::{
+    email_client::{self, EmailClient},
+    settings::DatabaseSettings,
+};
 
 #[tokio::test]
 async fn health_check_works() {
@@ -78,7 +81,7 @@ async fn subscribe_return_a_422_when_data_is_missing() {
 }
 
 #[tokio::test]
-async fn subscribe_returns_a_200_when_fields_are_present_but_empty() {
+async fn subscribe_returns_a_415_when_fields_are_present_but_invalid() {
     let app = spawn_app().await;
     let client = hyper::Client::new();
     let test_cases = vec![
@@ -98,10 +101,10 @@ async fn subscribe_returns_a_200_when_fields_are_present_but_empty() {
             .await
             .expect("failed to execute request");
 
-        assert_ne!(
-            200,
+        assert_eq!(
+            415,
             response.status(),
-            "the API did not return 200 when payload was {}",
+            "the API did not return 400 Bad Request when payload was {}",
             description,
         )
     }
@@ -120,7 +123,18 @@ async fn spawn_app() -> TestApp {
     settings.database.db_name = Uuid::new_v4().to_string();
     let db_pool = configure_database(&settings.database).await;
 
-    let server = zero2prod::app::run(listener, db_pool.clone()).expect("failed to bind address");
+    let sender_email = settings
+        .email_client
+        .sender()
+        .expect("invalid sender email address");
+    let email_client = EmailClient::new(
+        settings.email_client.base_url,
+        sender_email,
+        settings.email_client.authorization_token,
+        settings.email_client.timeout,
+    );
+    let server = zero2prod::app::run(listener, db_pool.clone(), email_client)
+        .expect("failed to bind address");
     let _ = tokio::spawn(server);
     // format!("http://127.0.0.1:{}", port)
 

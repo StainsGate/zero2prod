@@ -4,8 +4,9 @@ use chrono::Utc;
 use hyper::StatusCode;
 use serde::Deserialize;
 use sqlx::PgPool;
-use unicode_segmentation::UnicodeSegmentation;
 use uuid::Uuid;
+
+use crate::domain::{NewSubscriber, SubscriberEmail, SubscriberName};
 
 #[derive(Deserialize)]
 pub struct FormData {
@@ -25,11 +26,11 @@ pub async fn subscribe(
     State(db_pool): State<PgPool>,
     Form(form): Form<FormData>,
 ) -> Result<(), StatusCode> {
-    if !is_valid_name(&form.name) {
-        return Err(StatusCode::BAD_REQUEST);
-    }
+    let new_subscriber = form
+        .try_into()
+        .map_err(|_| StatusCode::UNPROCESSABLE_ENTITY)?;
 
-    insert_subscriber(&db_pool, &form)
+    insert_subscriber(&db_pool, &new_subscriber)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(())
@@ -38,14 +39,14 @@ pub async fn subscribe(
 #[tracing::instrument(
     level = "info",
     name = "saving new subscriber details in the database",
-    skip(db_pool, form)
+    skip(db_pool, new_subscriber)
 )]
-async fn insert_subscriber(db_pool: &PgPool, form: &FormData) -> sqlx::Result<()> {
+async fn insert_subscriber(db_pool: &PgPool, new_subscriber: &NewSubscriber) -> sqlx::Result<()> {
     sqlx::query!(
         "INSERT INTO subscriptions (id, email, name, subscribed_at) VALUES ($1, $2, $3, $4)",
         Uuid::new_v4(),
-        form.email,
-        form.name,
+        new_subscriber.email.as_ref(),
+        new_subscriber.name.as_ref(),
         Utc::now(),
     )
     .execute(db_pool)
@@ -57,12 +58,12 @@ async fn insert_subscriber(db_pool: &PgPool, form: &FormData) -> sqlx::Result<()
     Ok(())
 }
 
-fn is_valid_name(name: &str) -> bool {
-    const FORBIDEN_CHARACTERS: [char; 9] = ['/', '(', ')', '"', '<', '>', '\\', '{', '}'];
+impl TryFrom<FormData> for NewSubscriber {
+    type Error = String;
 
-    let is_empty_or_whitespace = name.trim().is_empty();
-    let is_too_long = name.graphemes(true).count() > 256;
-    let contains_forbidden_characters = name.chars().any(|c| FORBIDEN_CHARACTERS.contains(&c));
-
-    !(is_empty_or_whitespace || is_too_long || contains_forbidden_characters)
+    fn try_from(value: FormData) -> Result<Self, Self::Error> {
+        let name = SubscriberName::parse(value.name)?;
+        let email = SubscriberEmail::parse(value.email)?;
+        Ok(Self { name, email })
+    }
 }

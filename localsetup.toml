@@ -11,3 +11,9 @@ password = "4822914"
 db_name = "midsiberia1908"
 migrate = true
 
+
+[email_client]
+base_url = "localhost"
+sender_email = "test@mail.com"
+authorization_token = "dynamic-gravity-token"
+timeout = "100ms"

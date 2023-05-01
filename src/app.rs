@@ -2,6 +2,7 @@ use axum::{routing, Router};
 use axum_macros::FromRef;
 use std::net::{SocketAddr, TcpListener};
 
+use crate::email_client::EmailClient;
 use crate::routes;
 use crate::trace;
 use futures::future::BoxFuture;
@@ -11,8 +12,15 @@ use tower_http::{request_id::MakeRequestUuid, trace::TraceLayer, ServiceBuilderE
 
 pub type Server = BoxFuture<'static, hyper::Result<()>>;
 
-pub fn run(listener: TcpListener, db_pool: PgPool) -> hyper::Result<Server> {
-    let state = AppState { db_pool };
+pub fn run(
+    listener: TcpListener,
+    db_pool: PgPool,
+    email_client: EmailClient,
+) -> hyper::Result<Server> {
+    let state = AppState {
+        db_pool,
+        email_client,
+    };
     let middleware = ServiceBuilder::new()
         .set_x_request_id(MakeRequestUuid)
         .layer(
@@ -36,4 +44,5 @@ pub fn run(listener: TcpListener, db_pool: PgPool) -> hyper::Result<Server> {
 #[derive(Clone, FromRef)]
 struct AppState {
     db_pool: PgPool,
+    email_client: EmailClient,
 }
