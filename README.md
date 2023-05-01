@@ -6,13 +6,13 @@
 
 ```bash
    # run docker images
-   $  bash ./env/test/setup start
+   bash ./env/test/setup start
 
    # stop docker images
    bash ./env/test/setup stop
 
    # run with local configfile
-   $ cargo run -- -f localsetup.toml
+   cargo run -- -f localsetup.toml
 
 ```
 
@@ -27,10 +27,18 @@
 
 ```bash
     #run sqlx migrate
-   $ sqlx migrate run
+   sqlx migrate run
 
    # run sqlx prepare
-   $ cargo sqlx prepare
+   cargo sqlx prepare
+```
+
+## lint command:
+
+```bash
+   # run clippy lint
+   cargo clippy -- -D warnings
+
 ```
 
 - **add tracing and prometheus**: traces are collected using [Grafana Tempo](https://grafana.com/oss/tempo/) and they can be inspected using [Grafana](https://grafana.com/) at the address `http://localhost:3000`. send request and then can find service in grafana-tempo.

@@ -4,7 +4,6 @@ use serde::Deserialize;
 use serde_with::{serde_as, DisplayFromStr};
 use sqlx::postgres::PgConnectOptions;
 use std::{net::IpAddr, time::Duration};
-use tracing::dispatcher::set_default;
 
 use crate::domain::SubscriberEmail;
 
